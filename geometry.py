@@ -17,7 +17,7 @@ def get_base(w1, w2):
     v1 = w1 / np.linalg.norm(w1)
     t2 = (w2 - np.dot(w2, v1) * v1) 
     v2 = t2 / np.linalg.norm(t2)
-    return v1, v2
+    return np.stack((v1, v2)).T
 
 class Triangle():
     def __init__(self, A, B, C):
@@ -49,8 +49,7 @@ class Triangle():
     def transform_to_2D(self, points):
         
         # get a ortho-normal base of the triangle
-        v1, v2 = get_base(self.AB, self.AC)
-        v = np.stack((v1, v2)).T
+        v = get_base(self.AB, self.AC)
         # Set A as new origin:
         a = np.zeros(2)
         b = np.dot(self.AB, v)
@@ -60,10 +59,7 @@ class Triangle():
         points -= self.A
         new_points = np.dot(points, v)
         return new_triangle, new_points
-            
 
-    
-    
 def xyz_to_lat_lon(x, y, z):
 
     # Calculate longitude
