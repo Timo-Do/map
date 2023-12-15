@@ -1,4 +1,4 @@
-import base
+import bases
 import numpy as np
 from matplotlib import pyplot as plt
 import pandas as pd
@@ -50,7 +50,7 @@ def plot_triangle_on_world(map, lats, lons):
     plt.plot(xs, ys, "r.", alpha = 0.3)
     plt.show()
 
-def generate_points_on_face(face, n = 10):
+def generate_points_on_triangle(face, n = 10):
     A = face[0, :]
     B = face[1, :]
     C = face[2, :]
@@ -106,21 +106,22 @@ def xyz_to_lat_lon(x, y, z):
     return lat, lon
 
 
-coord_points, vertices = base.get_faces(n =7)
+coord_points, vertices = bases.create_icosahedron()
+vertices, faces = bases.create_icosahedron()
 
 
 image = iio.imread("images/blue_marble_august_small.png")
 
-for idx_face, idx_vertices in enumerate(vertices):
-    face = coord_points[idx_vertices]
-    points = generate_points_on_face(face, n = 100000)
+for idx_face, face in enumerate(faces):
+    triangle = vertices[face]
+    points = generate_points_on_triangle(triangle, n = 100000)
     df = pd.DataFrame()
     df["x"] = points[:, 0]
     df["y"] = points[:, 1]
     df["z"] = points[:, 2]
     df["lat"], df["lon"] = xyz_to_lat_lon(df["x"], df["y"],df["z"])
 
-    verts_lat, verts_lon = xyz_to_lat_lon(face[:, 0], face[:, 1], face[:, 2])
+    verts_lat, verts_lon = xyz_to_lat_lon(triangle[:, 0], triangle[:, 1], triangle[:, 2])
     print("Vertices:")
     print(verts_lat)
     print(verts_lon)
@@ -128,9 +129,9 @@ for idx_face, idx_vertices in enumerate(vertices):
     plot_triangle_on_world(image, df["lat"], df["lon"])
     
     df[["r", "g", "b"]] = sample_from_image(image, df["lat"], df["lon"])
-    a = face[0, :]
-    b = face[1, :]
-    c = face[2, :]
+    a = triangle[0, :]
+    b = triangle[1, :]
+    c = triangle[2, :]
     points -= a
     b -= a
     c -= a
