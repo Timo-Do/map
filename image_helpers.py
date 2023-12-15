@@ -2,7 +2,7 @@ import numpy as np
 from scipy.interpolate import LinearNDInterpolator
 from matplotlib import pyplot as plt
 
-pp1 = 1000
+pp1 = 600
 
 # Transform to picture coordinates
 def lat_2_y(lat, h):
@@ -22,7 +22,7 @@ def sample_from_image(image, lat, lon):
     x[x >= w] = w - 1
     return image[y, x, :]
 
-def generate_image(triangle, points, RGB):
+def generate_image(triangle, points, RGBA):
     max_w = triangle.B[0]
     max_h = triangle.C[1]
     H = (max_h * pp1).astype(np.int32)
@@ -30,10 +30,9 @@ def generate_image(triangle, points, RGB):
     NX = np.linspace(0, max_w, W)
     NY = np.linspace(0, max_h, H)
     xgrid, ygrid = np.meshgrid(NX, NY)
-    interp = LinearNDInterpolator(points, RGB/255)
+    interp = LinearNDInterpolator(points, RGBA, fill_value=0)
     z = interp(xgrid, ygrid)
-    z[z > 1] = 1
-    z[z < 0] = 0
+
     return z
 
 def plot_points_on_map(map, lats, lons):
