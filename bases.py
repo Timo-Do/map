@@ -1,10 +1,22 @@
 import numpy as np
 from scipy.spatial import ConvexHull
+import geometry
 
 def get_faces_from_vertices(vertices):
-    hull = ConvexHull(vertices)
+    hull = ConvexHull(vertices, qhull_options="Qc")
     faces = hull.simplices
     return faces
+
+def generate_ring(n, lat, add_offset = False, add_center = False):
+    deg_offset = 5
+    if(add_offset):
+        deg_offset += 360/(2*n)
+    lons = np.linspace(deg_offset + 0, 360 + deg_offset, n, endpoint=False)
+    lats = np.ones_like(lons) * (lat)
+    xyz = geometry.lat_lon_to_XYZ(lats, lons)
+    if(add_center):
+        xyz = np.vstack((xyz, [0, 0, np.sin(np.deg2rad(lat)) - 1e-14]))
+    return xyz
 
 def create_icosahedron():
     t = (1 + np.sqrt(5)) / 2  # Golden ratio
@@ -42,6 +54,27 @@ def fibonacci_sphere(samples=1000):
         vertices.append((x, y, z))
 
     vertices =  np.array(vertices)
+    faces = get_faces_from_vertices(vertices)
+    
+    return vertices, faces
+
+def timo_spezial():
+    vertices = np.zeros((0,3))
+    
+    # first ring (antarctica)
+    ring = generate_ring(5, -58, add_center = True)
+    vertices = np.vstack((vertices, ring))
+
+    # middle ring ()
+    ring = generate_ring(5, 0, add_offset = True)
+    vertices = np.vstack((vertices, ring))
+
+    # third ring ()
+    ring = generate_ring(5, 58)
+    vertices = np.vstack((vertices, ring))
+
+    # tip
+    vertices = np.vstack((vertices, [0, 0, 1]))
     faces = get_faces_from_vertices(vertices)
     
     return vertices, faces

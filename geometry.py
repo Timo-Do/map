@@ -121,3 +121,11 @@ def XYZ_to_lat_lon(points):
 
 
     return lat, lon
+
+def lat_lon_to_XYZ(lat, lon):
+    lat = np.deg2rad(lat)
+    lon = np.deg2rad(lon)
+    X = np.cos(lat) * np.cos(lon)
+    Y = np.cos(lat) * np.sin(lon)
+    Z = np.sin(lat)
+    return np.stack((X,Y,Z)).T

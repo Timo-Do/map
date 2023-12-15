@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator
 from matplotlib import pyplot as plt
+import imageio.v3 as iio
 
 pp1 = 600
 
@@ -36,16 +37,32 @@ def generate_image(triangle, points, RGBA):
     return z
 
 def plot_points_on_map(map, lats, lons):
-
     h = map.shape[0]
     w = map.shape[1]
     ys = lat_2_y(lats, h)
     xs = lon_2_x(lons, w)
     ys = np.append(ys, ys[0])
     xs = np.append(xs, xs[0])
-    #plt.plot(xs, ys, "r.", alpha = 0.3)
-    print(xs)
-    map[ys, xs] = [1, 0, 0, 1]    
+    map[ys, xs] = [1, 1, 1, 1]    
     plt.imshow(map)
     plt.show()
 
+def stitch_together_map(n):
+    fname = lambda n: f"images/generated/{n}.png"
+    n_cols = 3
+    col_width = 700
+    row_height = 700
+    carpet = np.zeros((row_height * 10, col_width * n_cols, 4))
+    for i in range(n):
+        row = np.floor_divide(i, n_cols)
+        col = np.mod(i, n_cols)
+        image = iio.imread(fname(i), mode = "RGBA")
+        h = image.shape[0]
+        w = image.shape[1]
+        row_start = row_height * row
+        col_start = col_width * col
+        carpet[row_start : row_start + h, col_start : col_start + w, :] = image
+
+    iio.imwrite("carpet.png", carpet.astype(np.uint8))
+
+stitch_together_map(30)

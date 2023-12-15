@@ -12,26 +12,28 @@ def generate_map():
     basemap = iio.imread("images/blue_marble_august_small.png", mode = "RGBA")
 
     # Load a solid to project on
-    vertices, faces = bases.create_icosahedron()
-    border_lat = np.zeros(0)
-    border_lon = np.zeros(0)
+    #vertices, faces = bases.create_icosahedron()
+    #vertices, faces = bases.fibonacci_sphere(samples=35)
+    vertices, faces = bases.timo_spezial()
+
+    border_lats = np.zeros(0)
+    border_lons = np.zeros(0)
     for idx_face, face in enumerate(faces):
         # get the coordinates of the edges of the face
         A, B, C = vertices[face]
     
         triangle = geometry.Triangle(A, B, C)
         # get the coordinates of the inner points
-        #points = triangle.generate_points(10)
-        points = triangle.generate_points_on_border(1000)
-
+        points = triangle.generate_points(100000)
         lat, lon = geometry.XYZ_to_lat_lon(points)
+        border = triangle.generate_points_on_border(1000)
+        border_lat, border_lon = geometry.XYZ_to_lat_lon(border)
         if(DO_DEBUG_PLOTS):
             plot_helpers.plot_triangle_with_points(triangle, points)
             image_helpers.plot_points_on_map(basemap, lat, lon)
         
-        border_lat = np.hstack((border_lat, lat))
-        border_lon = np.hstack((border_lon, lon))
-
+        border_lats = np.hstack((border_lats, border_lat))
+        border_lons = np.hstack((border_lons, border_lon))
         continue
         # get the colors
         RGBA = image_helpers.sample_from_image(basemap, lat, lon)
@@ -44,7 +46,7 @@ def generate_map():
         map_part = map_part.astype(np.uint8)
         iio.imwrite(f"images/generated/{idx_face}.png", map_part)
         
-    image_helpers.plot_points_on_map(basemap, border_lat, border_lon)
+    image_helpers.plot_points_on_map(basemap, border_lats, border_lons)
 
 
 generate_map()
