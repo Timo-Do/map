@@ -7,11 +7,11 @@ pp1 = 600
 # Transform to picture coordinates
 def lat_2_y(lat, h):
     y = np.round(h * (-lat + 90)/180).astype(np.int32)
-    return y
+    return np.clip(y, 0, h - 1)
 
 def lon_2_x(lon, w):
     x = np.round(w * (lon + 180)/360).astype(np.int32)
-    return x
+    return np.clip(x, 0, w - 1)
 
 def sample_from_image(image, lat, lon):
     h = image.shape[0]
@@ -36,13 +36,16 @@ def generate_image(triangle, points, RGBA):
     return z
 
 def plot_points_on_map(map, lats, lons):
-    plt.imshow(map)
+
     h = map.shape[0]
     w = map.shape[1]
     ys = lat_2_y(lats, h)
     xs = lon_2_x(lons, w)
     ys = np.append(ys, ys[0])
     xs = np.append(xs, xs[0])
-    plt.plot(xs, ys, "r.", alpha = 0.3)
+    #plt.plot(xs, ys, "r.", alpha = 0.3)
+    print(xs)
+    map[ys, xs] = [1, 0, 0, 1]    
+    plt.imshow(map)
     plt.show()
 

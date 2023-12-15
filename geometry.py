@@ -1,15 +1,25 @@
 import numpy as np
 
-from matplotlib import pyplot as plt
 
-def r2_points(n = 10):
-    # From:
-    # https://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
-    g = 1.3247179572447460259609088
-    alpha = np.array([1/g, 1/g**2])
-    N = np.arange(n).reshape(n, 1)
+def _generate_sequence(alpha, n):
+    N = np.arange(1, n + 1).reshape(n, 1)
     N = np.mod(N * alpha, 1)
     return N
+
+def r1_points(n):
+    # From:
+    # https://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
+    g = 1.6180339887498948482
+    alpha = 1/g
+    return _generate_sequence(alpha, n)
+
+def r2_points(n):
+    # From:
+    # https://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
+    g = 1.32471795724474602596
+    alpha = np.array([1/g, 1/g**2])
+    return _generate_sequence(alpha, n)
+
 
 def get_base(w1, w2):
     # From:
@@ -59,14 +69,48 @@ class Triangle():
         points -= self.A
         new_points = np.dot(points, v)
         return new_triangle, new_points
+            
+    def get_barycentric_coordinates(self, points):
+        
+        n = points.shape[0]
+        d = points.shape[1]
+        if(d > 2):
+            triangle, points = self.transform_to_2D(points)
+        else:
+            triangle = self
+        
+        # set up matrix (first two rows)
+        M_upper = np.array([triangle.A, triangle.B, triangle.C]).T
+        M_lower = np.ones(3)
+        M = np.vstack([M_upper, M_lower])
+        
+        ones = np.ones(n).reshape(-1, 1)
+        points = np.hstack([points, ones]).T
+        M_ = np.linalg.inv(M)
+        points = np.dot(M_, points).T 
 
-def xyz_to_lat_lon(x, y, z):
+        return points
+    
+    def generate_points_on_border(self, n):
+        # n is per edge!
+        assert n > 3
+        points = np.array([self.A, self.B, self.C])
+        n = n - 2
+        k = r1_points(n)
+        points = np.vstack((points, self.A + k*self.AB))
+        points = np.vstack((points, self.A + k*self.AC))
+        points = np.vstack((points, self.B + k*self.BC))
+        return points
+        
+        
+def XYZ_to_lat_lon(points):
+    X, Y, Z = points.T
 
     # Calculate longitude
-    lon = np.arctan2(y, x)
+    lon = np.arctan2(Y, X)
 
     # Calculate latitude
-    lat = np.arctan2(z, np.sqrt(x**2 + y**2))
+    lat = np.arctan2(Z, np.sqrt(X**2 + Y**2))
 
     # Convert radians to degrees
     lat = np.degrees(lat)
