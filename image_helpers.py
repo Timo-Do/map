@@ -2,6 +2,8 @@ import numpy as np
 from scipy.interpolate import LinearNDInterpolator
 from matplotlib import pyplot as plt
 import imageio.v3 as iio
+from glob import glob
+import os
 
 pp1 = 600
 
@@ -47,22 +49,32 @@ def plot_points_on_map(map, lats, lons):
     plt.imshow(map)
     plt.show()
 
-def stitch_together_map(n):
-    fname = lambda n: f"images/generated/{n}.png"
-    n_cols = 3
-    col_width = 700
-    row_height = 700
-    carpet = np.zeros((row_height * 10, col_width * n_cols, 4))
-    for i in range(n):
-        row = np.floor_divide(i, n_cols)
-        col = np.mod(i, n_cols)
-        image = iio.imread(fname(i), mode = "RGBA")
+def stitch_together_map(max_width = 2000):
+    png_files = glob(os.path.join("images", "generated", "*.png"))
+    n = len(png_files)
+    current_col_height = 0
+    current_x_position = 0
+    current_y_position = 0
+    carpet = np.zeros((1000, max_width, 4))
+    for fname in png_files:
+        image = iio.imread(fname, mode = "RGBA")
         h = image.shape[0]
         w = image.shape[1]
-        row_start = row_height * row
-        col_start = col_width * col
-        carpet[row_start : row_start + h, col_start : col_start + w, :] = image
+
+        if(current_x_position + w > max_width):
+            current_y_position += current_col_height + 10
+            current_x_position = 0
+            current_col_height = 0
+        while(current_y_position + h > carpet.shape[0]):
+            carpet = np.vstack((carpet, np.zeros_like(carpet)))
+        if(h > current_col_height):
+            current_col_height = h
+        carpet[current_y_position : current_y_position + h,
+            current_x_position : current_x_position + w, :] = image
+        current_x_position += w
+
+    carpet = carpet[0 : current_y_position + current_col_height, :, :]
 
     iio.imwrite("carpet.png", carpet.astype(np.uint8))
 
-stitch_together_map(30)
+stitch_together_map()
