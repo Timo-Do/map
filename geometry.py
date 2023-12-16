@@ -31,15 +31,56 @@ def get_base(w1, w2):
 
 class Triangle():
     def __init__(self, A, B, C):
-        self.A = A
-        self.B = B
-        self.C = C
-        self.AC = C - A
+        self._A = A
+        self._B = B
+        self._C = C
+        self.do_calculations()
+    
+    @property
+    def A(self):
+        return self._A
+    @A.setter
+    def A(self, new_value):
+        self._A = new_value
+        self.do_calculations()
+
+    @property
+    def B(self):
+        return self._B
+    @B.setter
+    def B(self, new_value):
+        self._B = new_value
+        self.do_calculations()
+
+    @property
+    def C(self):
+        return self._C
+    @C.setter
+    def C(self, new_value):
+        self._C = new_value
+        self.do_calculations()
+
+
+    def do_calculations(self):
+        self.AC = self.C - self.A
         self.CA = -self.AC
-        self.AB = B - A
+        self.AB = self.B - self.A
         self.BA = -self.AB
-        self.BC = C - B
+        self.BC = self.C - self.B
         self.CB = -self.BC
+        self.center = np.mean([self.A, self.B, self.C], axis = 0)
+        self.normal = np.cross(self.AB, self.AC)
+
+    def flip(self):
+        new_A = self.B
+        new_B = self.A
+
+        self.A = new_A
+        self.B = new_B
+
+    def face_outwards(self):
+        if(np.sign(np.dot(self.center, self.normal)) > 0):
+            self.flip()
 
     def generate_points(self, n):    
         # From:
