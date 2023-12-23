@@ -26,13 +26,17 @@ def sample_from_image(image, lat, lon):
     x[x >= w] = w - 1
     return image[y, x, :]
 
-def generate_image(triangle, points, RGBA):
-    max_w = triangle.B[0]
-    max_h = triangle.C[1]
-    H = (max_h * pp1).astype(np.int32)
-    W = (max_w * pp1).astype(np.int32)
-    NX = np.linspace(0, max_w, W)
-    NY = np.linspace(0, max_h, H)
+def generate_image(points, RGBA):
+    min_w = np.min(points[:, 0])
+    max_w = np.max(points[:, 0])
+    min_h = np.min(points[:, 1])
+    max_h = np.max(points[:, 1])
+    range_w = max_w - min_w
+    range_h = max_h - min_h
+    H = (range_h * pp1).astype(np.int32)
+    W = (range_w * pp1).astype(np.int32)
+    NX = np.linspace(min_w, max_w, W)
+    NY = np.linspace(min_h, max_h, H)
     xgrid, ygrid = np.meshgrid(NX, NY)
     interp = LinearNDInterpolator(points, RGBA, fill_value=0)
     z = interp(xgrid, ygrid)
@@ -78,6 +82,14 @@ def stitch_together_map(max_width = 2500):
     carpet = carpet[0 : current_y_position + current_col_height, :, :]
 
     iio.imwrite("carpet.png", carpet.astype(np.uint8))
+
+def load_image(path):
+    return iio.imread(path, mode = "RGBA")
+
+def save_image(path, image):
+    image = image.astype(np.uint8)
+    iio.imwrite(path, image)
+
 
 if(__name__ == "__main__"):
     

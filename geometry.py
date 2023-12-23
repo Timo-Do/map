@@ -20,6 +20,9 @@ def r2_points(n):
     alpha = np.array([1/g, 1/g**2])
     return _generate_sequence(alpha, n)
 
+def flip(vector):
+    vector[0], vector[1] = vector[1], vector[0]
+    return vector
 
 def get_base(w1, w2):
     # From:
@@ -72,17 +75,13 @@ class Triangle():
         self.CB = -self.BC
         self.center = np.mean([self.A, self.B, self.C], axis = 0)
         self.normal = np.cross(self.AB, self.AC)
+        self.vertices = (self.A, self.B, self.C)
 
     def flip(self):
-        new_A = self.B
-        new_B = self.A
+        [self.A, self.B, self.C] = flip([self.A, self.B, self.C])
 
-        self.A = new_A
-        self.B = new_B
-
-    def face_outwards(self):
-        if(np.sign(np.dot(self.center, self.normal)) > 0):
-            self.flip()
+    def is_facing_inwards(self):
+        return np.sign(np.dot(self.center, self.normal)) > 0
 
     def generate_points(self, n):    
         # From:
@@ -112,6 +111,8 @@ class Triangle():
         points -= self.A
         new_points = np.dot(points, v)
         return new_triangle, new_points
+            
+
             
     def get_barycentric_coordinates(self, points):
         
@@ -144,6 +145,54 @@ class Triangle():
         points = np.vstack((points, self.A + k*self.AC))
         points = np.vstack((points, self.B + k*self.BC))
         return points
+    
+    def align_to(self, points, A = None, B = None, C = None):
+        args = [A, B, C]
+        args_given = [arg is not None for arg in args]
+        if(np.sum(args_given) != 2):
+            raise ValueError("Can only align to two new points")
+        if(A is not None):
+            target = A
+            anchor = self.A
+            if(B is not None):
+                current = self.AB
+                new = B - A
+            elif(C is not None):
+                current = self.AC
+                new = C - A
+        elif(B is not None):
+            target = B
+            anchor = self.B
+            current = self.BC
+            new = C - B
+
+        points -= anchor
+        self.A -= anchor
+        self.B -= anchor
+        self.C -= anchor
+
+        current_angle = np.arctan2(current[1], current[0])
+        new_angle = np.arctan2(new[1], new[0])
+        rotation_angle = new_angle - current_angle
+
+        rotation_matrix = [[np.cos(rotation_angle), -np.sin(rotation_angle)],
+                           [np.sin(rotation_angle),  np.cos(rotation_angle)]]
+        points = points.T
+        points = np.dot(rotation_matrix, points).T
+        self.A = np.dot(rotation_matrix, self.A)
+        self.B = np.dot(rotation_matrix, self.B)
+        self.C = np.dot(rotation_matrix, self.C)
+
+        points += target
+        self.A += target
+        self.B += target
+        self.C += target
+        
+        return points
+        
+        
+
+
         
         
 def XYZ_to_lat_lon(points):

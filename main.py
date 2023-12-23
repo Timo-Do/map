@@ -10,13 +10,14 @@ DO_DEBUG_PLOTS = False
 DO_BORDER_ONLY = False
 
 def generate_map():
-    basemap = iio.imread("images/blue_marble_august_small.png", mode = "RGBA")
+    basemap = image_helpers.load_image("images/blue_marble_august_small.png")
 
     # Load a solid to project on
     #vertices, faces = bases.create_icosahedron()
     #vertices, faces = bases.fibonacci_sphere(samples=35)
     #vertices, faces = bases.fibonacci_sphere(12)
     vertices, faces = bases.timo_spezial2()
+    np.savez("solids/timo_spezial.npz", vertices=vertices, faces=faces)
     n_faces = faces.shape[0]
     border_lats = np.zeros(0)
     border_lons = np.zeros(0)
@@ -26,7 +27,8 @@ def generate_map():
         A, B, C = vertices[face]
     
         triangle = geometry.Triangle(A, B, C)
-        triangle.face_outwards()
+        if(triangle.is_facing_inwards()):
+            triangle.flip()
         # get the coordinates of the inner points
         points = triangle.generate_points(100000)
         lat, lon = geometry.XYZ_to_lat_lon(points)
@@ -47,7 +49,7 @@ def generate_map():
         flat_triangle, points = triangle.transform_to_2D(points)
 
 
-        map_part = image_helpers.generate_image(flat_triangle, points, RGBA)
+        map_part = image_helpers.generate_image(points, RGBA)
         map_part = map_part.astype(np.uint8)
         iio.imwrite(f"images/generated/{idx_face}.png", map_part)
         
