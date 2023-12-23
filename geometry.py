@@ -60,6 +60,8 @@ class Triangle():
         self._C = new_value
         self.do_calculations()
 
+    def calculate_lengths(self):
+        return np.linalg.norm([self.AB, self.BC, self.CA], axis = 1)
 
     def do_calculations(self):
         self.AC = self.C - self.A

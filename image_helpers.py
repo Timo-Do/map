@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 import imageio.v3 as iio
 from glob import glob
 import os
+import random
 
 pp1 = 600
 
@@ -49,13 +50,14 @@ def plot_points_on_map(map, lats, lons):
     plt.imshow(map)
     plt.show()
 
-def stitch_together_map(max_width = 2000):
+def stitch_together_map(max_width = 2500):
     png_files = glob(os.path.join("images", "generated", "*.png"))
     n = len(png_files)
     current_col_height = 0
     current_x_position = 0
     current_y_position = 0
     carpet = np.zeros((1000, max_width, 4))
+    random.shuffle(png_files)
     for fname in png_files:
         image = iio.imread(fname, mode = "RGBA")
         h = image.shape[0]
@@ -77,4 +79,6 @@ def stitch_together_map(max_width = 2000):
 
     iio.imwrite("carpet.png", carpet.astype(np.uint8))
 
-stitch_together_map()
+if(__name__ == "__main__"):
+    
+    stitch_together_map()
