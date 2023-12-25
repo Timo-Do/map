@@ -24,6 +24,11 @@ def flip(vector):
     vector[0], vector[1] = vector[1], vector[0]
     return vector
 
+def generate_rotation_matrix(rotation_angle):
+    rotation_matrix = np.array([[np.cos(rotation_angle), -np.sin(rotation_angle)],
+                                [np.sin(rotation_angle),  np.cos(rotation_angle)]])
+    return rotation_matrix
+
 def get_base(w1, w2):
     # From:
     # https://en.wikipedia.org/wiki/Gram%E2%80%93Schmidt_process
@@ -34,9 +39,9 @@ def get_base(w1, w2):
 
 class Triangle():
     def __init__(self, A, B, C):
-        self._A = A
-        self._B = B
-        self._C = C
+        self._A = np.array(A)
+        self._B = np.array(B)
+        self._C = np.array(C)
         self.do_calculations()
     
     @property
@@ -83,7 +88,7 @@ class Triangle():
     def is_facing_inwards(self):
         return np.sign(np.dot(self.center, self.normal)) > 0
 
-    def generate_points(self, n):    
+    def generate_inner_points(self, n):    
         # From:
         # https://extremelearning.com.au/evenly-distributing-points-in-a-triangle/
         unit_square_points = r2_points(n)
@@ -135,7 +140,7 @@ class Triangle():
 
         return points
     
-    def generate_points_on_border(self, n):
+    def generate_edge_points(self, n):
         # n is per edge!
         assert n > 3
         points = np.array([self.A, self.B, self.C])
@@ -146,53 +151,63 @@ class Triangle():
         points = np.vstack((points, self.B + k*self.BC))
         return points
     
-    def align_to(self, points, A = None, B = None, C = None):
+    def translate(self, translation_vector):
+        self.A += translation_vector
+        self.B += translation_vector
+        self.C += translation_vector
+
+    def rotate(self, rotation_matrix):
+        self.A = np.dot(rotation_matrix, self.A)
+        self.B = np.dot(rotation_matrix, self.B)
+        self.C = np.dot(rotation_matrix, self.C)
+
+
+    def align_to(self, points, A = None, B = None, C = None, gap = 0):
         args = [A, B, C]
         args_given = [arg is not None for arg in args]
         if(np.sum(args_given) != 2):
             raise ValueError("Can only align to two new points")
         if(A is not None):
-            target = A
-            anchor = self.A
+            target = np.array(A)
+            anchor = np.array(self.A)
             if(B is not None):
-                current = self.AB
-                new = B - A
+                current_edge = self.AB
+                alignment_edge = B - A
+                alignment_center = (B + A)/2
             elif(C is not None):
-                current = self.AC
-                new = C - A
+                current_edge = self.AC
+                alignment_edge = C - A
+                alignment_center = (C + A)/2
         elif(B is not None):
-            target = B
-            anchor = self.B
-            current = self.BC
-            new = C - B
+            target = np.array(B)
+            anchor = np.array(self.B)
+            current_edge = self.BC
+            alignment_edge = C - B
+            alignment_center = (C + B)/2
 
+        self.translate(-anchor) 
         points -= anchor
-        self.A -= anchor
-        self.B -= anchor
-        self.C -= anchor
 
-        current_angle = np.arctan2(current[1], current[0])
-        new_angle = np.arctan2(new[1], new[0])
+        current_angle = np.arctan2(current_edge[1], current_edge[0])
+        new_angle = np.arctan2(alignment_edge[1], alignment_edge[0])
         rotation_angle = new_angle - current_angle
-
-        rotation_matrix = [[np.cos(rotation_angle), -np.sin(rotation_angle)],
-                           [np.sin(rotation_angle),  np.cos(rotation_angle)]]
+        rotation_matrix = generate_rotation_matrix(rotation_angle)
         points = points.T
         points = np.dot(rotation_matrix, points).T
-        self.A = np.dot(rotation_matrix, self.A)
-        self.B = np.dot(rotation_matrix, self.B)
-        self.C = np.dot(rotation_matrix, self.C)
+        self.rotate(rotation_matrix)
 
         points += target
-        self.A += target
-        self.B += target
-        self.C += target
-        
+        self.translate(target)
+        if(gap > 0):
+            rot90 = generate_rotation_matrix(np.pi/2)
+            edge_normal = np.dot(rot90, alignment_edge)
+            edge_normal *= np.sign(np.dot(self.center - alignment_center, edge_normal))
+            edge_normal /= np.linalg.norm(edge_normal, 2)
+            translate_gap = edge_normal * gap
+            points += translate_gap
+            self.translate(translate_gap)
+
         return points
-        
-        
-
-
         
         
 def XYZ_to_lat_lon(points):
@@ -210,8 +225,6 @@ def XYZ_to_lat_lon(points):
 
     # Wrap longitude to the range (-180, 180]
     lon = (lon + 180) % 360 - 180
-
-
     return lat, lon
 
 def lat_lon_to_XYZ(lat, lon):

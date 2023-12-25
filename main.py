@@ -30,9 +30,9 @@ def generate_map():
         if(triangle.is_facing_inwards()):
             triangle.flip()
         # get the coordinates of the inner points
-        points = triangle.generate_points(100000)
+        points = triangle.generate_inner_points(100000)
         lat, lon = geometry.XYZ_to_lat_lon(points)
-        border = triangle.generate_points_on_border(1000)
+        border = triangle.generate_edge_points(1000)
         border_lat, border_lon = geometry.XYZ_to_lat_lon(border)
         if(DO_DEBUG_PLOTS):
             plot_helpers.plot_triangle_with_points(triangle, points)

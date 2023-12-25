@@ -6,7 +6,6 @@ from glob import glob
 import os
 import random
 
-pp1 = 600
 
 # Transform to picture coordinates
 def lat_2_y(lat, h):
@@ -26,15 +25,15 @@ def sample_from_image(image, lat, lon):
     x[x >= w] = w - 1
     return image[y, x, :]
 
-def generate_image(points, RGBA):
+def generate_image(points, RGBA, PP1):
     min_w = np.min(points[:, 0])
     max_w = np.max(points[:, 0])
     min_h = np.min(points[:, 1])
     max_h = np.max(points[:, 1])
     range_w = max_w - min_w
     range_h = max_h - min_h
-    H = (range_h * pp1).astype(np.int32)
-    W = (range_w * pp1).astype(np.int32)
+    H = (range_h * PP1).astype(np.int32)
+    W = (range_w * PP1).astype(np.int32)
     NX = np.linspace(min_w, max_w, W)
     NY = np.linspace(min_h, max_h, H)
     xgrid, ygrid = np.meshgrid(NX, NY)
