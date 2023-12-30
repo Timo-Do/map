@@ -9,39 +9,39 @@ n_sampling = 100000
 
 
 basemap = image_helpers.load_image("images/blue_marble_august_small.png")
-solid = np.load("solids/timo_spezial.npz")
+solid = np.load("solids/windmill.npz")
 vertices = solid["vertices"]
-
+unfolding_chart = solid["unfolding_chart"]
 n_faces = solid["faces"].shape[0]
-faces = np.zeros(20, dtype=map_helpers.Face)
+faces = np.zeros(n_faces, dtype=map_helpers.Face)
 
-unfolding_chart = np.array([
-    # Antarctica
-    [19,  7],
-    [ 7, 10],
-    [10, 11],
-    [11, 18],
-    # Africa and Europe
-    [19, 17],
-    [17, 16],
-    [16,  4],
-    # Asia
-    [ 7,  8],
-    [ 8,  9],
-    [ 9,  5],
-    # Pacific East
-    [10, 12],
-    [12,  3],
-    [ 3,  0],
-    # Pacific West
-    [11, 14],
-    [14, 13],
-    [13,  1],
-    # Americas
-    [18, 15],
-    [15,  6],
-    [ 6,  2]
-])
+# unfolding_chart = np.array([
+#     # Antarctica
+#     [19,  7],
+#     [ 7, 10],
+#     [10, 11],
+#     [11, 18],
+#     # Africa and Europe
+#     [19, 17],
+#     [17, 16],
+#     [16,  4],
+#     # Asia
+#     [ 7,  8],
+#     [ 8,  9],
+#     [ 9,  5],
+#     # Pacific East
+#     [10, 12],
+#     [12,  3],
+#     [ 3,  0],
+#     # Pacific West
+#     [11, 14],
+#     [14, 13],
+#     [13,  1],
+#     # Americas
+#     [18, 15],
+#     [15,  6],
+#     [ 6,  2]
+# ])
 
 for idx_face in np.unique(unfolding_chart):
     nodes = solid["faces"][idx_face, :]
@@ -63,4 +63,4 @@ for idx_face in np.unique(unfolding_chart):
     RGBA = np.vstack((RGBA, faces[idx_face].RGBA))
 
 map = image_helpers.generate_image(points, RGBA, PP1)
-image_helpers.save_image("layout.png", map)
+image_helpers.save_image("windmill.png", map)

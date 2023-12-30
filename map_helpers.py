@@ -9,14 +9,31 @@ class Face():
         self.points = np.zeros((0,vertices.shape[1]))
         self.RGBA = np.zeros((0, 4))
         A, B, C = vertices
-        triangle = geometry.Triangle(A, B, C)
-        if(triangle.is_facing_inwards()):
-            idx_vector = np.arange(3)
-            triangle.flip()
-            flipped_idxs = geometry.flip(idx_vector)
-            self.nodes = self.nodes[idx_vector]
-            self.vertices = self.vertices[flipped_idxs, :]
-        self.triangle = triangle
+        self.triangle = geometry.Triangle(A, B, C)
+        if(self.triangle.is_facing_inwards()):
+            self.flip()
+        self.free_edges = np.array([True, True, True]) # AB, BC, CA
+        self.is_aligned = False
+
+    def _vector_to_edge(self, edge_vector):
+        AB = np.array([1, 1, 0])
+        BC = np.array([0, 1, 1])
+        CA = np.array([1, 0, 1])
+        if(edge_vector == AB):
+            return 0
+        elif(edge_vector == BC):
+            return 1
+        elif(edge_vector == CA):
+            return 2
+        else:
+            raise ValueError("Not a valid edge vector!")
+
+    def flip(self):
+        self.triangle.flip()
+        idx_vector = np.arange(3)
+        flipped_idxs = geometry.flip(idx_vector)
+        self.nodes = self.nodes[idx_vector]
+        self.vertices = self.vertices[flipped_idxs, :]
 
     def add_border_outline(self, color = np.zeros(4)):
         border_points = self.triangle.generate_edge_points(1000)
@@ -43,15 +60,20 @@ class Face():
     def align_to(self, face, gap = 0):
         names = ["A", "B", "C"]
         common_edge = {}
-
-        bary = self.triangle.get_barycentric_coordinates(self.points)
-
+        my_vertices = np.zeros(3)
+        their_vertices = np.zeros(3)
         for idx_node, node in enumerate(self.nodes):
             result_arr = np.where(face.nodes == node)[0]
             if(result_arr.shape[0] > 0):
                 result = result_arr[0]
                 common_edge[names[idx_node]] = face.triangle.vertices[result]
+                my_vertices[idx_node] = 1
+                their_vertices[result] = 1
         self.points = self.triangle.align_to(self.points, gap = gap, **common_edge)
+
+        self.is_aligned = True
+        self.free_edges[self._vector_to_edge[my_vertices]] = False
+        face.free_edges[self._vector_to_edge[their_vertices]] = False
 
 
         

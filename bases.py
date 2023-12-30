@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.spatial import ConvexHull
-from scipy.optimize import differential_evolution
 import geometry
+from matplotlib import pyplot as plt
 
 def get_faces_from_vertices(vertices):
     hull = ConvexHull(vertices, qhull_options="Qc")
@@ -16,8 +16,21 @@ def generate_ring(n, lat, add_offset = False, add_center = False):
     lats = np.ones_like(lons) * (lat)
     xyz = geometry.lat_lon_to_XYZ(lats, lons)
     if(add_center):
-        xyz = np.vstack(([0, 0, np.sin(np.deg2rad(lat)) - 1e-5], xyz))
+        z = np.sin(np.deg2rad(lat))
+        xyz = np.vstack(([0, 0, z + np.sign(z) * 1e-5], xyz))
     return xyz
+
+def plot_solid(vertices, faces):
+    fig = plt.figure(figsize=(8,5))
+    ax = plt.axes(projection='3d')
+
+    x = vertices[:, 0]
+    y = vertices[:, 1]
+    z = vertices[:, 2]
+
+    ax.plot_trisurf(x, y, z, triangles=faces,
+                        cmap='viridis', alpha=0.2, edgecolor='k')
+    plt.show()
 
 def create_icosahedron():
     t = (1 + np.sqrt(5)) / 2  # Golden ratio
@@ -59,100 +72,64 @@ def fibonacci_sphere(samples=1000):
     
     return vertices, faces
 
-def timo_spezial():
-    vertices = np.zeros((0,3))
-    
-    # first ring (antarctica)
-    ring = generate_ring(5, -58, add_center = True)
-    vertices = np.vstack((vertices, ring))
 
-    # middle ring ()
-    ring = generate_ring(5, 0, add_offset = True)
-    vertices = np.vstack((vertices, ring))
-
-    # third ring ()
-    ring = generate_ring(5, 58)
-    vertices = np.vstack((vertices, ring))
-
-    # tip
-    vertices = np.vstack((vertices, [0, 0, 1]))
-    faces = get_faces_from_vertices(vertices)
-    
-    return vertices, faces
-
-def evaluate_triangulation(latlons, fixed, special, full = False):
-    latlons = np.reshape(latlons, (-1, 2))
-    vertices = geometry.lat_lon_to_XYZ(latlons[:, 0], latlons[:, 1])
-    vertices = np.vstack((fixed, vertices))
-    faces = get_faces_from_vertices(vertices)
-    n_faces = faces.shape[0]
-    lengths = np.ones((n_faces, 3)) * np.nan
-    for idx_face, face in enumerate(faces):
-        # get the coordinates of the edges of the face
-        if(vertices[special] in face):
-            continue
-        A, B, C = vertices[face]
-        triangle = geometry.Triangle(A, B, C)
-        lengths[idx_face, :] = triangle.calculate_lengths()
-
-    lengths = lengths.reshape(-1, 1)
-    if(full):
-        return lengths
+def waterman_polyhedron(O, R):
+    r = 0.5
+    if(O == 1):
+        offset = np.array([0, 0, 0])
+    elif(O == 2):
+        offset = np.array([1/2, 1/2, 0])
+    elif(O == 3):
+        offset = np.array([1/3, 1/3, 2/3])
+    elif(O == 4):
+        offset = np.array([1/2, 1/2, 1/2])
+    elif(O == 5):
+        offset = np.array([0, 0, 1/2])
+    elif(O == 6):
+        offset = np.array(1, 0, 0)
     else:
-        return np.nanmax(lengths) - np.nanmin(lengths)
+        raise ValueError(f"Origin {O} is unknown.")
 
-class CallBackHandler():
-    generation = 0
-    
-    def __init__(self, name, aggregate):
-        self.name = name
-        self.fun = aggregate
-    def callback(self, xk, convergence):
-        print(f"Generation\t : {self.generation}")
-        print(f"Convergence\t : {convergence}")
-        print(" - - - ")
-        if(self.generation % 10 == 0):
-            fname = f"solids/{self.name}-{self.generation:03}"
-            points = self.fun(xk)
-            np.save(fname, points, allow_pickle=False)
-        self.generation += 1
+    N = np.ceil(R * 2 / r).astype(np.int32)
+    i = j = K = np.arange(-N, N, dtype = np.int32)
 
-def generate_triang():
-    lat_ring = -58
-    n_ring = 5
-    eps_center = np.array([0, 0, 1e-7])
-    center = np.array([0, 0, np.sin(np.deg2rad(lat_ring))])
-    lons = np.linspace(0, 360, n_ring, endpoint=False)
-    lats = np.ones_like(lons) * (lat_ring)
-    xyz_ring = geometry.lat_lon_to_XYZ(lats, lons)
-    xyz_fixed = np.vstack((center - eps_center, xyz_ring, np.array([0,0,1])))
+    idx_i, idx_j = np.meshgrid(np.arange(len(i)), np.arange(len(j)))
+    I = i[idx_i.flatten()]
+    J = j[idx_j.flatten()]
 
-    n_free = 10
-    bounds_lat = (lat_ring, 90)
-    bounds_lon = (-180, 180)
-    bounds = []
-    for i in np.arange(n_free * 2):
-        if(i % 2):
-            bounds.append(bounds_lon)
-        else:
-            bounds.append(bounds_lat)
-    args = (xyz_fixed, 0)
-    def aggregate(xk):
-        xk = xk.reshape(-1, 2)
-        lats = xk[:, 0]
-        lons = xk[:, 1]
-        xyz_free = geometry.lat_lon_to_XYZ(lats, lons)
-        points = np.vstack((xyz_fixed, xyz_free))
-        #points[0, :] = center
-        return points
-    
-    cbh = CallBackHandler("ant58", aggregate)
+    X = r * (2 * J + I % 2)
+    Y = I * r * np.sqrt(3)
+    Z = I * 0
 
-    differential_evolution(
-        evaluate_triangulation, bounds, args = args, callback = cbh.callback)
+    A = np.stack((X, Y, Z)).T
+
+   
+    B = A + r * np.array([1, np.sqrt(3)/3, 0])
+    C = A + r * np.array([0, 2 * np.sqrt(3)/3, 0])
+    lattice = np.zeros((0,3))
+    z = np.array([0, 0, 2 * np.sqrt(6)/3]) * r
+    for k in K:
+        if(k % 3 == 0):
+            layer = A + k * z
+        elif(k % 3 == 1):
+            layer = B + k * z
+        elif(k % 3 == 2):
+            layer = C + k * z
+        lattice = np.vstack((lattice, layer))
+
+    # sweeping
+    lattice -= offset
+    dist = np.linalg.norm(lattice, 2, axis = 1)
+    lattice = lattice[dist < R]
+
+    lattice += offset
+    faces = get_faces_from_vertices(lattice)
+
+    return lattice, faces
+    # generate FCC lattice
 
 
-def timo_spezial2():
+def windmill():
     vertices = np.zeros((0,3))
     
     # first ring (antarctica)
@@ -170,7 +147,59 @@ def timo_spezial2():
     
     return vertices, faces
 
+def snowflake():
 
+
+    vertices_base = generate_ring(6, -58, add_center = True)
+    center = vertices_base[0, :]
+    hexagon = vertices_base[1:, :]
+    hexagon_center = np.zeros_like(hexagon)
+    hexagon_dir = np.zeros_like(hexagon)
+    hexagon_normal = np.zeros_like(hexagon)
+    faces_base = np.zeros((6, 3))
+    for i in np.arange(6):
+        this_edge = i
+        next_edge = (i + 1) % 6
+        hexagon_center[i, :] = (hexagon[this_edge, :] + hexagon[next_edge, :])/2
+        hexagon_dir[i, :] = hexagon_center[i] - center
+        hexagon_normal[i, :] = (hexagon[next_edge, :] - hexagon[this_edge, :])/2
+        faces_base[i, :] = [this_edge + 1, next_edge + 1, 0]
+
+ 
+    vertices_middle = np.zeros((12, 3))
+    pp_edge = 4
+    vertices_stripes = np.zeros((6 * 2 * pp_edge, 3))
+
+    z_middle = 0
+    for i in np.arange(6):
+        left_edge = i * 2
+        right_edge = i * 2 + 1
+        center = hexagon_center[i]
+        center[2] = z_middle
+        center += hexagon_dir[i] * 2
+        vertices_middle[left_edge, :] = center + hexagon_normal[i]
+        vertices_middle[right_edge, :] = center - hexagon_normal[i]
+        left_line = vertices_middle[left_edge] - hexagon[i]
+        right_line = vertices_middle[right_edge] - hexagon[(i + 1) % 6]
+        parts = np.linspace(0, 1, pp_edge)
+        for idx, part in enumerate(parts):
+            vertices_stripes[i * 2 * pp_edge+ idx, :] = hexagon[i] + part * left_line
+            vertices_stripes[i * 2 * pp_edge + idx + pp_edge] = hexagon[(i + 1) % 6] + part * right_line
+        for idx in np.arange(pp_edge * 2):
+            vertices_stripes[i * pp_edge + idx] += vertices_stripes[i * pp_edge + idx]/1e3
+
+
+    vertices_top = generate_ring(6, 58, add_center = True)
+
+    vertices = np.vstack((vertices_base, vertices_middle, vertices_stripes, vertices_top))
+
+
+
+    faces = get_faces_from_vertices(vertices)
+
+    return vertices, faces
 
 if(__name__ == "__main__"):
-    generate_triang()
+    
+    vertices, faces = waterman_polyhedron(2, np.sqrt(3))
+    plot_solid(vertices, faces)
