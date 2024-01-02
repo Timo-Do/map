@@ -5,6 +5,8 @@ import imageio.v3 as iio
 from glob import glob
 import os
 import random
+import geometry
+import map_helpers
 
 
 # Transform to picture coordinates
@@ -24,6 +26,40 @@ def sample_from_image(image, lat, lon):
     y[y >= h] = h - 1
     x[x >= w] = w - 1
     return image[y, x, :]
+
+
+def generate_canvas(bounds, PP1, padding = 0):
+    padding = padding / PP1
+    [x_min, x_max, y_min, y_max] = bounds
+    inc = 1/PP1
+    x = np.arange(x_min - padding, x_max + padding + inc, inc)
+    y = np.arange(y_min - padding, y_max + padding + inc, inc)
+    ww, hh = np.meshgrid(x, y)
+    canvas = np.zeros((hh.shape[0], hh.shape[1], 4), dtype = np.uint8)
+    return canvas, hh, ww
+
+def render(faces, baseimage, PP1, overspill = 0):
+    bounds = map_helpers.get_bounds(faces)
+    canvas, hh, ww = generate_canvas(bounds, PP1, padding = 10)
+    h = canvas.shape[0]
+    w = canvas.shape[1]
+    xx = ww.reshape(-1, 1)
+    yy = hh.reshape(-1, 1)
+
+    XY = np.hstack((xx, yy))
+    canvas = canvas.reshape((XY.shape[0], 4))
+ 
+    for face in faces:
+        BC = face.triangle_on_plane.XY_to_barycentric(XY)
+        inner_triangle = np.min(BC, axis = 1) > -overspill
+        XYZ = face.triangle_on_solid.barycentric_to_XYZ(BC[inner_triangle, :])
+        lats, lons = geometry.XYZ_to_lat_lon(XYZ)
+        RGBA = sample_from_image(baseimage, lats, lons)
+        canvas[inner_triangle, :] = RGBA
+    
+    canvas = canvas.reshape(h, w, 4)
+    return canvas
+
 
 def generate_image(points, RGBA, PP1):
     min_w = np.min(points[:, 0])

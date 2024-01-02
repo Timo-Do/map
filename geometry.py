@@ -81,6 +81,14 @@ class Triangle():
         self.center = np.mean([self.A, self.B, self.C], axis = 0)
         self.normal = np.cross(self.AB, self.AC)
         self.vertices = (self.A, self.B, self.C)
+        self.dim = self.center.shape[0]
+        self.L = np.array([self.A, self.B, self.C]).T
+
+    def generate_barycentric_conversion_matrix(self):
+        T_upper = np.array([self.A, self.B, self.C]).T
+        T_lower = np.ones(3)
+        T = np.vstack([T_upper, T_lower])
+        self.T_inv = np.linalg.inv(T)
 
     def flip(self):
         [self.A, self.B, self.C] = flip([self.A, self.B, self.C])
@@ -103,7 +111,7 @@ class Triangle():
         points[not_mask] += (1 - r1[not_mask]) * self.AB + (1 - r2[not_mask]) * self.AC
         return points
     
-    def transform_to_2D(self, points):
+    def transform_to_2D(self):
         
         # get a ortho-normal base of the triangle
         v = get_base(self.AB, self.AC)
@@ -112,33 +120,26 @@ class Triangle():
         b = np.dot(self.AB, v)
         c = np.dot(self.AC, v)
         new_triangle = Triangle(a, b, c)
+        new_triangle.generate_barycentric_conversion_matrix()
         # Move origin
-        points -= self.A
-        new_points = np.dot(points, v)
-        return new_triangle, new_points
+        return new_triangle
             
 
             
-    def get_barycentric_coordinates(self, points):
+    def XY_to_barycentric(self, XY):
         
-        n = points.shape[0]
-        d = points.shape[1]
-        if(d > 2):
-            triangle, points = self.transform_to_2D(points)
-        else:
-            triangle = self
-        
-        # set up matrix (first two rows)
-        M_upper = np.array([triangle.A, triangle.B, triangle.C]).T
-        M_lower = np.ones(3)
-        M = np.vstack([M_upper, M_lower])
-        
-        ones = np.ones(n).reshape(-1, 1)
-        points = np.hstack([points, ones]).T
-        M_ = np.linalg.inv(M)
-        points = np.dot(M_, points).T 
+        n = XY.shape[0]
 
-        return points
+        if(self.dim > 2):
+            raise ValueError("Can only compute barycentric coordinates for 2D triangle.")
+        ones = np.ones((n, 1))
+        BC = np.dot(self.T_inv, np.hstack((XY, ones)).T).T 
+
+        return BC
+    
+    def barycentric_to_XYZ(self, BC):
+        XYZ = np.dot(self.L, BC.T).T
+        return XYZ
     
     def generate_edge_points(self, n):
         # n is per edge!
@@ -162,7 +163,7 @@ class Triangle():
         self.C = np.dot(rotation_matrix, self.C)
 
 
-    def align_to(self, points, A = None, B = None, C = None, gap = 0):
+    def align_to(self, A = None, B = None, C = None, gap = 0):
         args = [A, B, C]
         args_given = [arg is not None for arg in args]
         if(np.sum(args_given) != 2):
@@ -186,28 +187,24 @@ class Triangle():
             alignment_center = (C + B)/2
 
         self.translate(-anchor) 
-        points -= anchor
 
         current_angle = np.arctan2(current_edge[1], current_edge[0])
         new_angle = np.arctan2(alignment_edge[1], alignment_edge[0])
         rotation_angle = new_angle - current_angle
         rotation_matrix = generate_rotation_matrix(rotation_angle)
-        points = points.T
-        points = np.dot(rotation_matrix, points).T
+
         self.rotate(rotation_matrix)
 
-        points += target
         self.translate(target)
+
         if(gap > 0):
             rot90 = generate_rotation_matrix(np.pi/2)
             edge_normal = np.dot(rot90, alignment_edge)
             edge_normal *= np.sign(np.dot(self.center - alignment_center, edge_normal))
             edge_normal /= np.linalg.norm(edge_normal, 2)
             translate_gap = edge_normal * gap
-            points += translate_gap
-            self.translate(translate_gap)
 
-        return points
+            self.translate(translate_gap)
         
         
 def XYZ_to_lat_lon(points):
