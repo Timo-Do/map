@@ -31,8 +31,26 @@ def sample_from_image(image, lat, lon):
     x[x >= w] = w - 1
     return image[y, x, :]
 
+def sample_from_images(images, lat, lon):
+    cols, dx = divmod(lon + 180, 90)
+    rows, dy = divmod(-lat + 90, 90)
 
-def generate_canvas(bounds, PP1, padding = 0):
+    RGBA = np.zeros((len(lat), 4))
+    parts = np.vstack((cols, rows)).T
+    for part in np.unique(parts, axis = 0):
+        image = images[part[0]][part[1]]
+        h = image.shape[0]
+        w = image.shape[1]
+        partMask = np.all(parts == part, axis = 1)
+        dxs = dx[partMask]
+        dys = dy[partMask]
+        x = np.clip(w * dxs / 90, 0, w - 1).astype(np.int32)
+        y = np.clip(h * dys / 90, 0, h - 1).astype(np.int32)
+        RGBA[partMask] = image[y, x, :]
+    return RGBA
+
+
+def generate_canvas(bounds, PP1, padding = 0, background = [0,0,0,0]):
     padding = padding / PP1
     [x_min, x_max, y_min, y_max] = bounds
     inc = 1/PP1
@@ -40,11 +58,12 @@ def generate_canvas(bounds, PP1, padding = 0):
     y = np.arange(y_min - padding, y_max + padding + inc, inc)
     ww, hh = np.meshgrid(x, y)
     canvas = np.zeros((hh.shape[0], hh.shape[1], 4), dtype = np.uint8)
+    canvas[:, :, :] = background
     return canvas, hh, ww
 
-def render(faces, baseimage, PP1, overspill = 0):
+def render(faces, baseimage, PP1, overspill = 0, background = [0,0,0,0]):
     bounds = maphelpers.get_bounds(faces)
-    canvas, hh, ww = generate_canvas(bounds, PP1, padding = 10)
+    canvas, hh, ww = generate_canvas(bounds, PP1, padding = 50, background = background)
     h = canvas.shape[0]
     w = canvas.shape[1]
     xx = ww.reshape(-1, 1)
@@ -57,7 +76,7 @@ def render(faces, baseimage, PP1, overspill = 0):
         inner_triangle = np.min(BC, axis = 1) > -overspill
         XYZ = face.triangle_on_solid.barycentric_to_XYZ(BC[inner_triangle, :])
         lats, lons = geometryhelpers.XYZ_to_lat_lon(XYZ)
-        RGBA = sample_from_image(baseimage, lats, lons)
+        RGBA = sample_from_images(baseimage, lats, lons)
         canvas[inner_triangle, :] = RGBA
     
     canvas = canvas.reshape(h, w, 4)
@@ -124,12 +143,17 @@ def stitch_together_map(max_width = 2500):
 def load_image(path):
     return iio.imread(path, mode = "RGBA")
 
+def load_basemap(fnameFun):
+    cols = ["A", "B", "C", "D"]
+    rows = ["1", "2"]
+    images = {}
+    for col in range(len(cols)):
+        images[col] = {}
+        for row in range(len(rows)):
+            images[col][row] = load_image(fnameFun(col, row))
+    return images
 
 def save_image(path, image):
     image = image.astype(np.uint8)
     iio.imwrite(path, image)
 
-
-if(__name__ == "__main__"):
-    
-    stitch_together_map()

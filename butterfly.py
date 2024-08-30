@@ -6,10 +6,10 @@ import imagehelpers
 
 
 s = 0.8
-a = 0.25
+a = 0.24
+PP1Leaf = 300
 PP1Layout = 300
-
-alpha = np.deg2rad(210)
+alpha = np.deg2rad(206)
 beta = np.deg2rad(45)
 gamma = np.deg2rad(0)
 
@@ -123,11 +123,21 @@ for idxLeaf in np.arange(8):
     for idxFace, face in enumerate(leaf):
         mapFaces[idxLeaf, idxFace] = maphelpers.Face(face, vertices[face])
 
+# get basemap
+def getBasemapFiles(col, row):
+    colNames = ["A", "B", "C", "D"]
+    rowNames = ["1", "2"]
+    #return f"images/base/real/world.200408.3x21600x21600.{colNames[col]}{rowNames[row]}.jpg"
+    return f"images/base/test/{colNames[col]}{rowNames[row]}.png"
+
+basemap = imagehelpers.load_basemap(getBasemapFiles)
+
+
 # align each leaf and render it for printing
 for idxLeaf, leaf in enumerate(mapFaces):
     for fold in startBottom:
         leaf[fold[1]].align_to(leaf[fold[0]])
-    canvas = imagehelpers.render(leaf.flatten(), basemap, PP1Layout)
+    canvas = imagehelpers.render(leaf.flatten(), basemap, PP1Leaf, background = [17, 17, 17, 255])
     imagehelpers.save_image(f"images/{idxLeaf}.png", np.rot90(canvas))
 
 # now do the layout
