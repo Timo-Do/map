@@ -8,6 +8,8 @@ import os
 import random
 import geometryhelpers
 import maphelpers
+from scipy.stats import multivariate_normal
+import scipy.signal
 
 import PIL
 
@@ -71,6 +73,7 @@ def render(faces, baseimage, PP1, overspill = 0, background = [0,0,0,0]):
 
     XY = np.hstack((xx, yy))
     canvas = canvas.reshape((XY.shape[0], 4))
+    outside = np.ones(XY.shape[0], dtype=bool)
     for face in faces:
         BC = face.triangle_on_plane.XY_to_barycentric(XY)
         inner_triangle = np.min(BC, axis = 1) > -overspill
@@ -78,10 +81,24 @@ def render(faces, baseimage, PP1, overspill = 0, background = [0,0,0,0]):
         lats, lons = geometryhelpers.XYZ_to_lat_lon(XYZ)
         RGBA = sample_from_images(baseimage, lats, lons)
         canvas[inner_triangle, :] = RGBA
+        outside[inner_triangle] = False
     
     canvas = canvas.reshape(h, w, 4)
+    outside = outside.reshape(h, w)
+
+    # blur
+    kernel = getGaussianKernel()
+    blurred = np.zeros_like(canvas)
+    for channel in np.arange(canvas.shape[2]):
+        blurred[:, :, channel] = scipy.signal.convolve2d(canvas[:, :, channel], kernel, mode = "same")
+    canvas[outside] = blurred[outside]
     return canvas
 
+def getGaussianKernel(size = 5, cov = 0.5):
+    x = np.linspace(0, size, size, endpoint=False)
+    y = multivariate_normal.pdf(x, mean=size//2, cov=cov)
+    y = y.reshape(1,size)
+    return np.dot(y.T,y)
 
 def generate_image(points, RGBA, PP1):
     min_w = np.min(points[:, 0])
