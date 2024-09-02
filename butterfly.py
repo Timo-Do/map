@@ -3,6 +3,7 @@ import bases
 import geometryhelpers
 import maphelpers
 import imagehelpers
+from matplotlib import pyplot as plt
 
 
 s = 0.8
@@ -132,13 +133,57 @@ def getBasemapFiles(col, row):
 
 basemap = imagehelpers.load_basemap(getBasemapFiles)
 
+def isCommonEdge(mainNodes, neighborNodes):
+    return len(np.intersect1d(mainNodes, neighborNodes)) > 1
 
 # align each leaf and render it for printing
 for idxLeaf, leaf in enumerate(mapFaces):
     for fold in startBottom:
         leaf[fold[1]].align_to(leaf[fold[0]])
-    canvas = imagehelpers.render(leaf.flatten(), basemap, PP1Leaf, background = [17, 17, 17, 255])
-    imagehelpers.save_image(f"images/{idxLeaf}.png", np.rot90(canvas))
+
+    outlineNodes = []
+    idxOutline = 0
+    for face in leaf:
+        for idxEdge in range(3):
+            edge = [face.nodes[idxEdge % 3], face.nodes[(idxEdge + 1) % 3]]
+            isInOutline = False
+            for e in [edge, edge[::-1]]:
+                if(e in outlineNodes):
+                    outlineNodes.remove(e)
+                    isInOutline = True
+            if(not isInOutline):
+                outlineNodes.append(edge)
+    
+    outline = [outlineNodes[0][0], outlineNodes[0][1]]
+    outlineNodes.remove(outlineNodes[0])
+    while(len(outlineNodes) > 0):
+        for line in outlineNodes:
+            if(line[0] == outline[-1]):
+                outline.append(line[1])
+                outlineNodes.remove(line)
+            elif(line[1] == outline[-1]):
+                outline.append(line[0])
+                outlineNodes.remove(line)
+    outline.remove(outline[-1])
+    outlineVertices = np.zeros((len(outline), 2))
+    for idxOutlineNode, outlineNode in enumerate(outline):
+        for face in leaf:
+            for faceNodeIdx, faceNode in enumerate(face.nodes):
+                if(faceNode == outlineNode):
+                    outlineVertices[idxOutlineNode] = face.triangle_on_plane.vertices[faceNodeIdx]
+
+    center = np.mean(outlineVertices, axis = 0)
+    outlineVertices -= center
+    outlineVertices *= 1.01
+    outlineVertices += center    
+
+
+    canvas, shape = imagehelpers.render(leaf.flatten(), basemap, PP1Leaf, background = [17, 17, 17, 0], outline = outlineVertices)
+    imagehelpers.save_image(f"images/{idxLeaf}.png", canvas)
+    shape.save_svg(f"images/{idxLeaf}.svg")
+
+
+
 
 # now do the layout
 
@@ -147,8 +192,7 @@ startLeaf = layoutChart[0][0]
 for fold in startBottom:
     mapFaces[startLeaf, fold[1]].align_to(mapFaces[startLeaf, fold[0]])
 
-def isCommonEdge(mainNodes, neighborNodes):
-    return len(np.intersect1d(mainNodes, neighborNodes)) > 1
+
 
 for glueing in layoutChart:
     mainLeaf = mapFaces[glueing[0]]

@@ -10,6 +10,7 @@ import geometryhelpers
 import maphelpers
 from scipy.stats import multivariate_normal
 import scipy.signal
+import drawsvg
 
 import PIL
 
@@ -63,7 +64,7 @@ def generate_canvas(bounds, PP1, padding = 0, background = [0,0,0,0]):
     canvas[:, :, :] = background
     return canvas, hh, ww
 
-def render(faces, baseimage, PP1, overspill = 0, background = [0,0,0,0]):
+def render(faces, baseimage, PP1, overspill = 0, background = [0,0,0,0], blur = True, outline = None):
     bounds = maphelpers.get_bounds(faces)
     canvas, hh, ww = generate_canvas(bounds, PP1, padding = 50, background = background)
     h = canvas.shape[0]
@@ -79,20 +80,40 @@ def render(faces, baseimage, PP1, overspill = 0, background = [0,0,0,0]):
         inner_triangle = np.min(BC, axis = 1) > -overspill
         XYZ = face.triangle_on_solid.barycentric_to_XYZ(BC[inner_triangle, :])
         lats, lons = geometryhelpers.XYZ_to_lat_lon(XYZ)
-        RGBA = sample_from_images(baseimage, lats, lons)
+        if(isinstance(baseimage, np.ndarray)):
+            RGBA = sample_from_image(baseimage, lats, lons)
+        elif(isinstance(baseimage, dict)):
+            RGBA = sample_from_images(baseimage, lats, lons)
+        else:
+            raise NotImplementedError(f"Parsed baseimage of type {type(baseimage)} is not supported.")
         canvas[inner_triangle, :] = RGBA
         outside[inner_triangle] = False
     
     canvas = canvas.reshape(h, w, 4)
-    outside = outside.reshape(h, w)
+    if(blur):
+        outside = outside.reshape(h, w)
 
-    # blur
-    kernel = getGaussianKernel()
-    blurred = np.zeros_like(canvas)
-    for channel in np.arange(canvas.shape[2]):
-        blurred[:, :, channel] = scipy.signal.convolve2d(canvas[:, :, channel], kernel, mode = "same")
-    canvas[outside] = blurred[outside]
-    return canvas
+        # blur
+        kernel = getGaussianKernel()
+        blurred = np.zeros_like(canvas)
+        for channel in np.arange(canvas.shape[2]):
+            blurred[:, :, channel] = scipy.signal.convolve2d(canvas[:, :, channel], kernel, mode = "same")
+        canvas[outside] = blurred[outside]
+
+    if(outline is None):
+        return canvas
+    else:
+        svg_width = abs(ww[0, 0] - ww[-1, -1])
+        svg_height = abs(hh[0, 0] - hh[-1, -1])
+        scale = np.mean([w/svg_width, h/svg_height])        
+        topLeft = (ww[0,0], hh[0,0])
+        movedOutline = outline - topLeft
+        svg = drawsvg.Drawing(w, h)
+        path = 'M ' + ' L '.join(f'{x},{y}' for x, y in scale*movedOutline) + ' Z'
+        svg.append(drawsvg.Path(d = path, stroke = "black"))
+        #svg.save_svg("wetesting.svg")
+    return canvas, svg
+
 
 def getGaussianKernel(size = 5, cov = 0.5):
     x = np.linspace(0, size, size, endpoint=False)
