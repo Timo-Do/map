@@ -66,7 +66,7 @@ def generate_canvas(bounds, PP1, padding = 0, background = [0,0,0,0]):
 
 def render(faces, baseimage, PP1, overspill = 0, background = [0,0,0,0], blur = True, outline = None):
     bounds = maphelpers.get_bounds(faces)
-    canvas, hh, ww = generate_canvas(bounds, PP1, padding = 50, background = background)
+    canvas, hh, ww = generate_canvas(bounds, PP1, padding = 150, background = background)
     h = canvas.shape[0]
     w = canvas.shape[1]
     xx = ww.reshape(-1, 1)
@@ -103,13 +103,17 @@ def render(faces, baseimage, PP1, overspill = 0, background = [0,0,0,0], blur = 
     if(outline is None):
         return canvas
     else:
-        svg_width = abs(ww[0, 0] - ww[-1, -1])
-        svg_height = abs(hh[0, 0] - hh[-1, -1])
-        scale = np.mean([w/svg_width, h/svg_height])        
+        #svg_width = abs(ww[0, 0] - ww[-1, -1])
+        #svg_height = abs(hh[0, 0] - hh[-1, -1])
+        svg_width = 500 #mm
+        #svg_height = h * scale
+        scale =  abs(ww[0, 0] - ww[-1, -1])/svg_width
+        svg_height = abs(hh[0, 0] - hh[-1, -1]) / scale
+        #scale = np.mean([w/svg_width, h/svg_height])        
         topLeft = (ww[0,0], hh[0,0])
         movedOutline = outline - topLeft
-        svg = drawsvg.Drawing(w, h)
-        path = 'M ' + ' L '.join(f'{x},{y}' for x, y in scale*movedOutline) + ' Z'
+        svg = drawsvg.Drawing(svg_width, svg_height)
+        path = 'M ' + ' L '.join(f'{x},{y}' for x, y in movedOutline/scale) + ' Z'
         svg.append(drawsvg.Path(d = path, stroke = "black"))
         #svg.save_svg("wetesting.svg")
     return canvas, svg

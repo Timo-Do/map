@@ -8,8 +8,8 @@ from matplotlib import pyplot as plt
 
 s = 0.8
 a = 0.24
-PP1Leaf = 300
-PP1Layout = 300
+PP1Leaf = 8000
+PP1Layout = 800
 alpha = np.deg2rad(206)
 beta = np.deg2rad(45)
 gamma = np.deg2rad(0)
@@ -128,9 +128,10 @@ for idxLeaf in np.arange(8):
 def getBasemapFiles(col, row):
     colNames = ["A", "B", "C", "D"]
     rowNames = ["1", "2"]
-    #return f"images/base/real/world.200408.3x21600x21600.{colNames[col]}{rowNames[row]}.jpg"
-    return f"images/base/test/{colNames[col]}{rowNames[row]}.png"
+    return f"images/base/bathyOcean/world.topo.bathy.200408.3x21600x21600.{colNames[col]}{rowNames[row]}.png"
+    #return f"images/base/test/{colNames[col]}{rowNames[row]}.png"
 
+#basemap = np.array([[[255, 255, 255, 255]]])
 basemap = imagehelpers.load_basemap(getBasemapFiles)
 
 def isCommonEdge(mainNodes, neighborNodes):
@@ -178,7 +179,7 @@ for idxLeaf, leaf in enumerate(mapFaces):
     outlineVertices += center    
 
 
-    canvas, shape = imagehelpers.render(leaf.flatten(), basemap, PP1Leaf, background = [17, 17, 17, 0], outline = outlineVertices)
+    canvas, shape = imagehelpers.render(leaf.flatten(), basemap, PP1Leaf, background = [17, 17, 17, 255], outline = outlineVertices)
     imagehelpers.save_image(f"images/{idxLeaf}.png", canvas)
     shape.save_svg(f"images/{idxLeaf}.svg")
 
