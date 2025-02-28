@@ -1,25 +1,5 @@
 import numpy as np
 
-
-def _generate_sequence(alpha, n):
-    N = np.arange(1, n + 1).reshape(n, 1)
-    N = np.mod(N * alpha, 1)
-    return N
-
-def r1_points(n):
-    # From:
-    # https://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
-    g = 1.6180339887498948482
-    alpha = 1/g
-    return _generate_sequence(alpha, n)
-
-def r2_points(n):
-    # From:
-    # https://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
-    g = 1.32471795724474602596
-    alpha = np.array([1/g, 1/g**2])
-    return _generate_sequence(alpha, n)
-
 def flip(vector):
     vector[0], vector[1] = vector[1], vector[0]
     return vector
@@ -96,21 +76,7 @@ class Triangle():
     def is_facing_inwards(self):
         return np.sign(np.dot(self.center, self.normal)) > 0
 
-    def generate_inner_points(self, n):    
-        # From:
-        # https://extremelearning.com.au/evenly-distributing-points-in-a-triangle/
-        unit_square_points = r2_points(n)
-        r1 = unit_square_points[:, 0, np.newaxis]
-        r2 = unit_square_points[:, 1, np.newaxis]
-        # Mask points inside triangle
-        mask = unit_square_points[:,0] + unit_square_points[:,1] < 1
-        not_mask = np.invert(mask)
-        # Parallelogram Method
-        points = np.tile(self.A, (n, 1))
-        points[mask] += r1[mask] * self.AB + r2[mask] * self.AC
-        points[not_mask] += (1 - r1[not_mask]) * self.AB + (1 - r2[not_mask]) * self.AC
-        return points
-    
+   
     def transform_to_2D(self):
         
         # get a ortho-normal base of the triangle
@@ -139,17 +105,6 @@ class Triangle():
     def barycentric_to_XYZ(self, BC):
         XYZ = np.dot(self.L, BC.T).T
         return XYZ
-    
-    def generate_edge_points(self, n):
-        # n is per edge!
-        assert n > 3
-        points = np.array([self.A, self.B, self.C])
-        n = n - 2
-        k = r1_points(n)
-        points = np.vstack((points, self.A + k*self.AB))
-        points = np.vstack((points, self.A + k*self.AC))
-        points = np.vstack((points, self.B + k*self.BC))
-        return points
     
     def translate(self, translation_vector):
         self.A += translation_vector

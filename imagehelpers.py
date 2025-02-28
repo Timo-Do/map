@@ -1,11 +1,7 @@
 import PIL.Image
 import numpy as np
-from scipy.interpolate import LinearNDInterpolator
 from matplotlib import pyplot as plt
 import imageio.v3 as iio
-from glob import glob
-import os
-import random
 import geometryhelpers
 import maphelpers
 from scipy.stats import multivariate_normal
@@ -103,19 +99,14 @@ def render(faces, baseimage, PP1, overspill = 0, background = [0,0,0,0], blur = 
     if(outline is None):
         return canvas
     else:
-        #svg_width = abs(ww[0, 0] - ww[-1, -1])
-        #svg_height = abs(hh[0, 0] - hh[-1, -1])
         svg_width = 500 #mm
-        #svg_height = h * scale
         scale =  abs(ww[0, 0] - ww[-1, -1])/svg_width
-        svg_height = abs(hh[0, 0] - hh[-1, -1]) / scale
-        #scale = np.mean([w/svg_width, h/svg_height])        
+        svg_height = abs(hh[0, 0] - hh[-1, -1]) / scale   
         topLeft = (ww[0,0], hh[0,0])
         movedOutline = outline - topLeft
         svg = drawsvg.Drawing(svg_width, svg_height)
         path = 'M ' + ' L '.join(f'{x},{y}' for x, y in movedOutline/scale) + ' Z'
         svg.append(drawsvg.Path(d = path, stroke = "black"))
-        #svg.save_svg("wetesting.svg")
     return canvas, svg
 
 
@@ -124,63 +115,6 @@ def getGaussianKernel(size = 5, cov = 0.5):
     y = multivariate_normal.pdf(x, mean=size//2, cov=cov)
     y = y.reshape(1,size)
     return np.dot(y.T,y)
-
-def generate_image(points, RGBA, PP1):
-    min_w = np.min(points[:, 0])
-    max_w = np.max(points[:, 0])
-    min_h = np.min(points[:, 1])
-    max_h = np.max(points[:, 1])
-    range_w = max_w - min_w
-    range_h = max_h - min_h
-    H = (range_h * PP1).astype(np.int32)
-    W = (range_w * PP1).astype(np.int32)
-    NX = np.linspace(min_w, max_w, W)
-    NY = np.linspace(min_h, max_h, H)
-    xgrid, ygrid = np.meshgrid(NX, NY)
-    interp = LinearNDInterpolator(points, RGBA, fill_value=0)
-    z = interp(xgrid, ygrid)
-
-    return z
-
-def plot_points_on_map(map, lats, lons):
-    h = map.shape[0]
-    w = map.shape[1]
-    ys = lat_2_y(lats, h)
-    xs = lon_2_x(lons, w)
-    ys = np.append(ys, ys[0])
-    xs = np.append(xs, xs[0])
-    map[ys, xs] = [1, 1, 1, 1]    
-    plt.imshow(map)
-    plt.show()
-
-def stitch_together_map(max_width = 2500):
-    png_files = glob(os.path.join("images", "butterfly", "*.png"))
-    n = len(png_files)
-    current_col_height = 0
-    current_x_position = 0
-    current_y_position = 0
-    carpet = np.zeros((1000, max_width, 4))
-    random.shuffle(png_files)
-    for fname in png_files:
-        image = iio.imread(fname, mode = "RGBA")
-        h = image.shape[0]
-        w = image.shape[1]
-
-        if(current_x_position + w > max_width):
-            current_y_position += current_col_height + 10
-            current_x_position = 0
-            current_col_height = 0
-        while(current_y_position + h > carpet.shape[0]):
-            carpet = np.vstack((carpet, np.zeros_like(carpet)))
-        if(h > current_col_height):
-            current_col_height = h
-        carpet[current_y_position : current_y_position + h,
-            current_x_position : current_x_position + w, :] = image
-        current_x_position += w
-
-    carpet = carpet[0 : current_y_position + current_col_height, :, :]
-
-    iio.imwrite("carpet.png", carpet.astype(np.uint8))
 
 def load_image(path):
     return iio.imread(path, mode = "RGBA")
