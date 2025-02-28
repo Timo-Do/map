@@ -19,7 +19,8 @@ def plot_solid(vertices, faces):
     z = vertices[:, 2]
 
     ax.plot_trisurf(x, y, z, triangles=faces,
-                        cmap='viridis', alpha=0.2, edgecolor='k')
+                        color='viridis', alpha=1, edgecolor='k')
+    ax.set_box_aspect([np.ptp(i) for i in [x, y, z]])
     plt.show()
 
 def createOctahedron():
