@@ -1,0 +1,11 @@
+parameters:
+  s: 0.8
+  a: 0.24
+  PP1:
+    Leafs: 8000
+    Layout: 800
+  rotation:
+    alpha: 206
+    beta: 45
+    gamma: 0
+  Basemap: images/base/bathyOcean/world.topo.bathy.200408.3x21600x21600.$COL$ROW.png
