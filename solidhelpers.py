@@ -1,13 +1,11 @@
 import numpy as np
 from scipy.spatial import ConvexHull
-import geometryhelpers
 from matplotlib import pyplot as plt
 
 def get_faces_from_vertices(vertices):
     hull = ConvexHull(vertices, qhull_options="Qc")
     faces = hull.simplices
     return faces
-
 
 
 def plot_solid(vertices, faces):

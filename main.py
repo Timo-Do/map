@@ -1,5 +1,5 @@
 import numpy as np
-import bases
+import solidhelpers
 import geometryhelpers
 import maphelpers
 import imagehelpers
@@ -37,7 +37,7 @@ yaw, pitch, roll = geometryhelpers.getRotationMatrices(alpha, beta, gamma)
 logging.debug("Rotation matrix created")
 
 
-octahedron = bases.createOctahedron() @ pitch
+octahedron = solidhelpers.createOctahedron() @ pitch
 logging.debug("Base octahedron created, with rotation applied")
 # In the base octahedron, the first two vertices are upper and lower tip (if you hold it like a diamond)
 # We call the inner square the "base". See the function for details.
