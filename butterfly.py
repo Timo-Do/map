@@ -153,7 +153,7 @@ for leaf in range(8):
     leaves[leaf, 6, 1] = level2idx(3, rightLev3)
     leaves[leaf, 6, 2] = level2idx(lower, rightSide)
 
-bases.plot_solid(vertices, leaves.reshape(-1, 3))
+#bases.plot_solid(vertices, leaves.reshape(-1, 3))
 # check if basemap contains a $ character
 if("$" in basemap_path):
     def getBasemapFiles(col, row):
