@@ -1,12 +1,5 @@
 import numpy as np
-from scipy.spatial import ConvexHull
 from matplotlib import pyplot as plt
-
-def get_faces_from_vertices(vertices):
-    hull = ConvexHull(vertices, qhull_options="Qc")
-    faces = hull.simplices
-    return faces
-
 
 def plot_solid(vertices, faces):
     fig = plt.figure(figsize=(8,5))
@@ -21,15 +14,35 @@ def plot_solid(vertices, faces):
     ax.set_box_aspect([np.ptp(i) for i in [x, y, z]])
     plt.show()
 
-def createOctahedron():
-    vertices = np.array([
-        # tips
-        [  0,  0,  1],
-        [  0,  0, -1],
-        # base
-        [  1,  0,  0],
-        [  0,  1,  0],
-        [ -1,  0,  0],
-        [  0, -1,  0]
-    ])
-    return vertices
+
+def getOutlineVertices(leaf : np.ndarray):
+    outlineNodes = []
+    for face in leaf:
+        for idxEdge in range(3):
+            edge = [face.nodes[idxEdge % 3], face.nodes[(idxEdge + 1) % 3]]
+            isInOutline = False
+            for e in [edge, edge[::-1]]:
+                if(e in outlineNodes):
+                    outlineNodes.remove(e)
+                    isInOutline = True
+            if(not isInOutline):
+                outlineNodes.append(edge)
+    
+    outline = [outlineNodes[0][0], outlineNodes[0][1]]
+    outlineNodes.remove(outlineNodes[0])
+    while(len(outlineNodes) > 0):
+        for line in outlineNodes:
+            if(line[0] == outline[-1]):
+                outline.append(line[1])
+                outlineNodes.remove(line)
+            elif(line[1] == outline[-1]):
+                outline.append(line[0])
+                outlineNodes.remove(line)
+    outline.remove(outline[-1])
+    outlineVertices = np.zeros((len(outline), 2))
+    for idxOutlineNode, outlineNode in enumerate(outline):
+        for face in leaf:
+            for faceNodeIdx, faceNode in enumerate(face.nodes):
+                if(faceNode == outlineNode):
+                    outlineVertices[idxOutlineNode] = face.triangle_on_plane.vertices[faceNodeIdx]
+    return outlineVertices
