@@ -8,4 +8,4 @@ parameters:
     alpha: 206
     beta: 45
     gamma: 0
-  Basemap: images/blue_marble_august_small.png
+  Basemap: images/base/blue_marble_august_small.png
