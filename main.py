@@ -54,8 +54,8 @@ for idxLeaf, leaf in enumerate(mapFaces):
                                         basemap, params["Leafs"]["PP1"],
                                         background = params["Leafs"]["Background"],
                                         outline = outlineVertices)
-    imagehelpers.save_image(f"images/{idxLeaf}.png", canvas)
-    shape.save_svg(f"images/{idxLeaf}.svg")
+    imagehelpers.save_image(f"images/leafs/png/{idxLeaf}.png", canvas)
+    shape.save_svg(f"images/leafs/svg/{idxLeaf}.svg")
 
 # ----> Layout (Leafs glued together)
 startLeaf = butterfly.layoutCharts["leafs"][0][0]
@@ -83,8 +83,6 @@ for glueing in butterfly.layoutCharts["leafs"]:
     for fold in chart:
         neighborLeaf[fold[1]].align_to(neighborLeaf[fold[0]])
         pass
-
-
 
 mapFaces = mapFaces[mapFaces != 0]
 
