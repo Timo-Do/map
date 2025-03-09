@@ -10,9 +10,9 @@ parameters:
     PP1: 400
     OutlineExpansion: 0.1
     GlueingGap: 0.0
-    Background: [17, 17, 17, 255]
+    Background: [17, 17, 17, 0]
   Layout:
     PP1: 400
     GlueingGap: 0.01
-    Background: [17, 17, 17, 255]
+    Background: [17, 17, 17, 0]
   Basemap: images/base/blue_marble_august_small.png
