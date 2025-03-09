@@ -1,11 +1,19 @@
 parameters:
-  s: 0.8
-  a: 0.24
-  PP1:
-    Leafs: 8000
-    Layout: 800
-  rotation:
-    alpha: 206
-    beta: 45
-    gamma: 0
-  Basemap: images/base/bathyOcean/world.topo.bathy.200408.3x21600x21600.$COL$ROW.png
+  Butterfly:
+    s: 0.8
+    a: 0.24
+    rotation:
+      alpha: 206
+      beta: 45
+      gamma: 0
+  Leafs:
+    PP1: 8000
+    OutlineExpansion: 0.1
+    GlueingGap: 0.0
+    Background: [17, 17, 17, 255]
+  Layout:
+    PP1: 800
+    GlueingGap: 0.01
+    Background: [17, 17, 17, 255]
+  Basemap:  images/base/bathyOcean/world.topo.bathy.200408.3x21600x21600.$COL$ROW.png
+
