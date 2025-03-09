@@ -1,27 +1,18 @@
-certifi @ file:///home/conda/feedstock_root/build_artifacts/certifi_1700303426725/work/certifi
-contourpy @ file:///home/conda/feedstock_root/build_artifacts/contourpy_1699041467346/work
-cycler @ file:///home/conda/feedstock_root/build_artifacts/cycler_1696677705766/work
-fonttools @ file:///home/conda/feedstock_root/build_artifacts/fonttools_1701530632106/work
-imageio @ file:///home/conda/feedstock_root/build_artifacts/imageio_1696854106455/work
-kiwisolver @ file:///home/conda/feedstock_root/build_artifacts/kiwisolver_1695379925569/work
-matplotlib @ file:///home/conda/feedstock_root/build_artifacts/matplotlib-suite_1700509454821/work
-munkres==1.1.4
-numpy @ file:///home/conda/feedstock_root/build_artifacts/numpy_1700874463738/work/dist/numpy-1.26.2-cp312-cp312-linux_x86_64.whl#sha256=623edd991be8f808d1f8e311b00923eff511e493e579c21bed09d101c09032d0
-packaging @ file:///home/conda/feedstock_root/build_artifacts/packaging_1696202382185/work
-pandas @ file:///home/conda/feedstock_root/build_artifacts/pandas_1702057142846/work
-Pillow @ file:///home/conda/feedstock_root/build_artifacts/pillow_1697423631343/work
-ply==3.11
-pyparsing @ file:///home/conda/feedstock_root/build_artifacts/pyparsing_1690737849915/work
-PyQt5==5.15.9
-PyQt5-sip==12.12.2
-python-dateutil @ file:///home/conda/feedstock_root/build_artifacts/python-dateutil_1626286286081/work
-pytz @ file:///home/conda/feedstock_root/build_artifacts/pytz_1693930252784/work
-SciPy @ file:///home/conda/feedstock_root/build_artifacts/scipy-split_1700812483254/work/dist/scipy-1.11.4-cp312-cp312-linux_x86_64.whl#sha256=4a38826a640d20e98d8709f58ee44b7261c2094720d230a515f23c9212bed074
-setuptools==68.2.2
-sip @ file:///home/conda/feedstock_root/build_artifacts/sip_1697300425834/work
-six @ file:///home/conda/feedstock_root/build_artifacts/six_1620240208055/work
-toml @ file:///home/conda/feedstock_root/build_artifacts/toml_1604308577558/work
-tomli @ file:///home/conda/feedstock_root/build_artifacts/tomli_1644342247877/work
-tornado @ file:///home/conda/feedstock_root/build_artifacts/tornado_1695373584819/work
-tzdata @ file:///home/conda/feedstock_root/build_artifacts/python-tzdata_1680081134351/work
-wheel==0.42.0
+contourpy==1.3.1
+cycler==0.12.1
+drawsvg==2.4.0
+fonttools==4.56.0
+imageio==2.37.0
+kiwisolver==1.4.8
+matplotlib==3.10.1
+numpy==2.2.3
+packaging==24.2
+pillow==11.1.0
+pyparsing==3.2.1
+PyQt6==6.8.1
+PyQt6-Qt6==6.8.2
+PyQt6_sip==13.10.0
+python-dateutil==2.9.0.post0
+PyYAML==6.0.2
+scipy==1.15.2
+six==1.17.0
