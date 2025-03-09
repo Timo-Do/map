@@ -5,6 +5,8 @@ import butterfly
 import yaml
 import os
 import logging
+
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 if("RUNCONFIG" in os.environ):
@@ -19,15 +21,11 @@ with open(configPath, 'r') as file:
 
 
 params = config['parameters']
-
-PP1Leaf = int(params['PP1']['Leafs'])
-PP1Layout = int(params['PP1']['Layout'])
 basemap_path = str(params['Basemap'])
 
+mapFaces = butterfly.getMapFaces(params["Butterfly"])
 
-
-mapFaces = butterfly.getMapFaces(params)
-
+# Load the basemap 
 if("$" in basemap_path):
     def getBasemapFiles(col, row):
         colNames = ["A", "B", "C", "D"]
@@ -41,25 +39,25 @@ else:
 
 layoutGap = 0.01
 
-
-
-
-# align each leaf and render it for printing
+# ----> Leafs (What you need for printing)
 for idxLeaf, leaf in enumerate(mapFaces):
     for fold in butterfly.layoutCharts["startBottom"]:
-        leaf[fold[1]].align_to(leaf[fold[0]])
+        leaf[fold[1]].align_to(leaf[fold[0]], gap = params["Leafs"]["GlueingGap"])
     outlineVertices = solidhelpers.getOutlineVertices(leaf)
     center = np.mean(outlineVertices, axis = 0)
     outlineVertices -= center
-    outlineVertices *= 1.01
+    outlineVertices *= 1 + params["Leafs"]["OutlineExpansion"]
     outlineVertices += center    
 
 
-    canvas, shape = imagehelpers.render(leaf.flatten(), basemap, PP1Leaf, background = [17, 17, 17, 255], outline = outlineVertices)
+    canvas, shape = imagehelpers.render(leaf.flatten(),
+                                        basemap, params["Leafs"]["PP1"],
+                                        background = params["Leafs"]["Background"],
+                                        outline = outlineVertices)
     imagehelpers.save_image(f"images/{idxLeaf}.png", canvas)
     shape.save_svg(f"images/{idxLeaf}.svg")
 
-# now render the entire thing
+# ----> Layout (Leafs glued together)
 startLeaf = butterfly.layoutCharts["leafs"][0][0]
 
 for fold in butterfly.layoutCharts["startBottom"]:
@@ -90,7 +88,9 @@ for glueing in butterfly.layoutCharts["leafs"]:
 
 mapFaces = mapFaces[mapFaces != 0]
 
-canvas = imagehelpers.render(mapFaces, basemap, PP1Layout)
+canvas = imagehelpers.render(mapFaces, basemap,
+                             params["Layout"]["PP1"],
+                             background = params["Layout"]["Background"])
 imagehelpers.save_image("images/layout.png", np.rot90(canvas))
 
 
