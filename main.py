@@ -23,9 +23,10 @@ with open(configPath, 'r') as file:
 params = config['parameters']
 basemap_path = str(params['Basemap'])
 
+logging.info(f"Shaping the butterfly.")
 mapFaces = butterfly.getMapFaces(params["Butterfly"])
 
-# Load the basemap 
+logging.info(f"Loading basemap from {basemap_path}")
 if("$" in basemap_path):
     def getBasemapFiles(col, row):
         colNames = ["A", "B", "C", "D"]
@@ -35,12 +36,10 @@ if("$" in basemap_path):
 else:
     basemap = imagehelpers.load_image(basemap_path)
 
-
-
-layoutGap = 0.01
-
+logging.info(f"Rendering the leafs.")
 # ----> Leafs (What you need for printing)
 for idxLeaf, leaf in enumerate(mapFaces):
+    logging.info(f"Rendering leaf {idxLeaf + 1}/{len(mapFaces)}")
     for fold in butterfly.layoutCharts["startBottom"]:
         leaf[fold[1]].align_to(leaf[fold[0]], gap = params["Leafs"]["GlueingGap"])
     outlineVertices = solidhelpers.getOutlineVertices(leaf)
@@ -57,7 +56,7 @@ for idxLeaf, leaf in enumerate(mapFaces):
     imagehelpers.save_image(f"images/leafs/png/{idxLeaf}.png", canvas)
     shape.save_svg(f"images/leafs/svg/{idxLeaf}.svg")
 
-# ----> Layout (Leafs glued together)
+logging.info(f"Rendering the layout.")
 startLeaf = butterfly.layoutCharts["leafs"][0][0]
 
 for fold in butterfly.layoutCharts["startBottom"]:
@@ -70,13 +69,13 @@ for glueing in butterfly.layoutCharts["leafs"]:
     mainLeaf = mapFaces[glueing[0]]
     neighborLeaf = mapFaces[glueing[1]]
     if(isCommonEdge(mainLeaf[3].nodes, neighborLeaf[0].nodes)):
-        neighborLeaf[0].align_to(mainLeaf[3], gap = layoutGap)
+        neighborLeaf[0].align_to(mainLeaf[3], gap = params["Layout"]["GlueingGap"])
         chart = butterfly.layoutCharts["startLeft"]
     elif(isCommonEdge(mainLeaf[0].nodes, neighborLeaf[3].nodes)):
-        neighborLeaf[3].align_to(mainLeaf[0], gap = layoutGap)
+        neighborLeaf[3].align_to(mainLeaf[0], gap = params["Layout"]["GlueingGap"])
         chart = butterfly.layoutCharts["startRight"]
     elif(isCommonEdge(mainLeaf[2].nodes, neighborLeaf[2].nodes)):
-        neighborLeaf[2].align_to(mainLeaf[2], gap = layoutGap)
+        neighborLeaf[2].align_to(mainLeaf[2], gap = params["Layout"]["GlueingGap"])
         chart = butterfly.layoutCharts["startBottom"]
     else:
         raise ValueError("No common edge found!")
@@ -90,5 +89,5 @@ canvas = imagehelpers.render(mapFaces, basemap,
                              params["Layout"]["PP1"],
                              background = params["Layout"]["Background"])
 imagehelpers.save_image("images/layout.png", np.rot90(canvas))
-
+logging.info(f"Done!")
 
